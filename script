@@ -1,0 +1,181 @@
+-- Block Brush 1.0 (lua) - Client Side
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Workspace = game:GetService("Workspace")
+
+-- Tela de Loading
+local loadingGui = Instance.new("ScreenGui")
+loadingGui.Parent = game.CoreGui
+loadingGui.Name = "BlockBrushLoading"
+
+local loadingFrame = Instance.new("Frame", loadingGui)
+loadingFrame.Size = UDim2.new(1, 0, 0, 80)
+loadingFrame.Position = UDim2.new(0, 0, 1, -80)
+loadingFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+
+local loadingText = Instance.new("TextLabel", loadingFrame)
+loadingText.Size = UDim2.new(1, 0, 1, 0)
+loadingText.Position = UDim2.new(0, 0, 0, 0)
+loadingText.Text = "Loading Block Brush...\nPlease wait..."
+loadingText.TextColor3 = Color3.new(1,1,1)
+loadingText.Font = Enum.Font.GothamBold
+loadingText.TextSize = 20
+loadingText.BackgroundTransparency = 1
+loadingText.TextWrapped = true
+
+-- Simula carregamento
+task.wait(2) -- Espera 2 segundos
+
+loadingText.Text = "Almost done..."
+
+task.wait(1.5) -- Espera mais um pouco
+
+-- Esconde a tela de loading
+loadingGui:Destroy()
+
+----------------------------------------------------
+-- Começa o Script Principal (Block Brush)
+----------------------------------------------------
+
+-- Block settings
+local blockSize = Vector3.new(4, 4, 4)
+local blockColor = Color3.fromRGB(255, 0, 0) -- Red
+local blockMaterial = Enum.Material.SmoothPlastic
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Parent = game.CoreGui
+gui.Name = "BlockPainter"
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 200, 0, 240)
+frame.Position = UDim2.new(0, 20, 0, 100)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Active = true
+frame.Draggable = true
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "Block Brush"
+title.BackgroundColor3 = Color3.fromRGB(45,45,45)
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+
+-- Color Button
+local colorBtn = Instance.new("TextButton", frame)
+colorBtn.Size = UDim2.new(0, 180, 0, 30)
+colorBtn.Position = UDim2.new(0,10,0,40)
+colorBtn.Text = "Change Color"
+colorBtn.BackgroundColor3 = blockColor
+colorBtn.TextColor3 = Color3.new(1,1,1)
+colorBtn.Font = Enum.Font.Gotham
+colorBtn.TextSize = 16
+
+colorBtn.MouseButton1Click:Connect(function()
+    blockColor = Color3.fromRGB(
+        math.random(0,255),
+        math.random(0,255),
+        math.random(0,255)
+    )
+    colorBtn.BackgroundColor3 = blockColor
+end)
+
+-- Material Button
+local materialBtn = Instance.new("TextButton", frame)
+materialBtn.Size = UDim2.new(0, 180, 0, 30)
+materialBtn.Position = UDim2.new(0,10,0,80)
+materialBtn.Text = "Change Material"
+materialBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+materialBtn.TextColor3 = Color3.new(1,1,1)
+materialBtn.Font = Enum.Font.Gotham
+materialBtn.TextSize = 16
+
+local materials = {
+    Enum.Material.SmoothPlastic,
+    Enum.Material.Neon,
+    Enum.Material.Wood,
+    Enum.Material.Grass,
+    Enum.Material.Metal,
+    Enum.Material.Concrete
+}
+local materialIndex = 1
+
+materialBtn.MouseButton1Click:Connect(function()
+    materialIndex = materialIndex + 1
+    if materialIndex > #materials then
+        materialIndex = 1
+    end
+    blockMaterial = materials[materialIndex]
+    materialBtn.Text = tostring(blockMaterial):gsub("Enum.Material.","")
+end)
+
+-- Size Button
+local sizeBtn = Instance.new("TextButton", frame)
+sizeBtn.Size = UDim2.new(0, 180, 0, 30)
+sizeBtn.Position = UDim2.new(0,10,0,120)
+sizeBtn.Text = "Change Size"
+sizeBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+sizeBtn.TextColor3 = Color3.new(1,1,1)
+sizeBtn.Font = Enum.Font.Gotham
+sizeBtn.TextSize = 16
+
+sizeBtn.MouseButton1Click:Connect(function()
+    blockSize = blockSize + Vector3.new(1,1,1)
+    if blockSize.X > 10 then
+        blockSize = Vector3.new(2,2,2)
+    end
+    sizeBtn.Text = "Size: "..blockSize.X
+end)
+
+-- Clear Blocks Button
+local clearBtn = Instance.new("TextButton", frame)
+clearBtn.Size = UDim2.new(0, 180, 0, 30)
+clearBtn.Position = UDim2.new(0,10,0,160)
+clearBtn.Text = "Clear Blocks"
+clearBtn.BackgroundColor3 = Color3.fromRGB(100,0,0)
+clearBtn.TextColor3 = Color3.new(1,1,1)
+clearBtn.Font = Enum.Font.GothamBold
+clearBtn.TextSize = 16
+
+-- Folder for blocks
+local folder = Instance.new("Folder", Workspace)
+folder.Name = "MyBlocks"
+
+clearBtn.MouseButton1Click:Connect(function()
+    folder:ClearAllChildren()
+end)
+
+-- Info Label
+local info = Instance.new("TextLabel", frame)
+info.Size = UDim2.new(1, -20, 0, 40)
+info.Position = UDim2.new(0,10,0,200)
+info.Text = "Click on the ground to place blocks"
+info.BackgroundTransparency = 1
+info.TextColor3 = Color3.new(1,1,1)
+info.Font = Enum.Font.Gotham
+info.TextSize = 14
+info.TextWrapped = true
+
+-- Place block on click
+Mouse.Button1Down:Connect(function()
+    if Mouse.Target then
+        local part = Instance.new("Part")
+        part.Size = blockSize
+        part.Anchored = true
+        part.Material = blockMaterial
+        part.Color = blockColor
+        part.CFrame = CFrame.new(
+            Vector3.new(
+                math.floor(Mouse.Hit.Position.X / blockSize.X + 0.5) * blockSize.X,
+                math.floor(Mouse.Hit.Position.Y / blockSize.Y + 0.5) * blockSize.Y,
+                math.floor(Mouse.Hit.Position.Z / blockSize.Z + 0.5) * blockSize.Z
+            )
+        )
+        part.Parent = folder
+    end
+end)
+
+print("Block brush activated!")
